@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  /* Light mode - academic admin palette */
+  --background: #F1F5F9;
+  --card: #FFFFFF;
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+  --sidebar: #0F172A;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --border: #E2E8F0;
+  --divider: #CBD5E1;
+  /* Status badges */
+  --available-text: #065F46;
+  --available-bg: #D1FAE5;
+  --borrowed-text: #92400E;
+  --borrowed-bg: #FEF3C7;
+  --overdue-text: #991B1B;
+  --overdue-bg: #FEE2E2;
+  --archived-text: #334155;
+  --archived-bg: #E2E8F0;
+}
+
+.dark {
+  --background: #0F172A;
+  --card: #1E293B;
+  --primary: #3B82F6;
+  --primary-hover: #60A5FA;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --border: #334155;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-primary: var(--primary);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}

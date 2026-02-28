@@ -1,0 +1,152 @@
+// Mini Library Management System - Prisma Schema
+// Use DATABASE_URL from .env.local (Neon Postgres, use pooling endpoint for serverless)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- NextAuth.js (Auth.js) models ---
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at       Int?
+  token_type       String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// --- App models ---
+enum Role {
+  ADMIN
+  LIBRARIAN
+  MEMBER
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(MEMBER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  loans    Loan[]       @relation("BorrowerLoans")
+  auditLogs AuditLog[]  @relation("AuditUser")
+}
+
+model Book {
+  id              String    @id @default(cuid())
+  title           String
+  author          String
+  isbn            String?
+  description     String?   @db.Text
+  publishedYear   Int?
+  coverImageUrl   String?
+  status          String    @default("AVAILABLE") // AVAILABLE | BORROWED
+  deletedAt       DateTime? // soft delete
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tags    BookTag[]
+  loans   Loan[]
+
+  @@index([title])
+  @@index([author])
+  @@index([isbn])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("books")
+}
+
+model Tag {
+  id    String @id @default(cuid())
+  name  String @unique
+
+  books BookTag[]
+
+  @@map("tags")
+}
+
+model BookTag {
+  bookId String
+  tagId  String
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, tagId])
+  @@map("book_tags")
+}
+
+model Loan {
+  id         String    @id @default(cuid())
+  bookId     String
+  userId     String
+  borrowedAt DateTime  @default(now())
+  dueDate    DateTime
+  returnedAt DateTime?
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user User @relation("BorrowerLoans", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([bookId])
+  @@index([userId])
+  @@index([returnedAt])
+  @@map("loans")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String   // e.g. BOOK_CREATED, BOOK_UPDATED, LOAN_CHECKOUT, ROLE_CHANGED
+  entity    String   // e.g. Book, Loan, User
+  entityId  String?
+  details   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user User? @relation("AuditUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
