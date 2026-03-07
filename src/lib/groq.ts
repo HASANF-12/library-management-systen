@@ -4,6 +4,8 @@
  * Models: llama-3.1-8b-instant (fast), llama-3.3-70b-versatile
  */
 
+declare const process: { env: Record<string, string | undefined> };
+
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
 
