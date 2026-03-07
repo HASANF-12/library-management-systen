@@ -33,9 +33,9 @@ Copy `.env.example` to `.env.local` and set:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes | Neon Postgres connection string (use **pooling** endpoint for serverless) |
-| `NEXTAUTH_URL` | Yes | e.g. `http://localhost:3000` |
-| `NEXTAUTH_SECRET` | Yes | Random secret (e.g. `openssl rand -base64 32`) |
+| `DATABASE_URL` | Yes | Neon Postgres connection string (use **pooling** endpoint for serverless/Vercel) |
+| `NEXTAUTH_URL` | Yes | App URL: `http://localhost:3000` (dev) or `https://your-app.vercel.app` (prod) |
+| `AUTH_SECRET` | Yes | Auth.js v5 secret (e.g. `openssl rand -base64 32`) |
 | `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret |
 | `OPENAI_API_KEY` | No | Enables AI “Improve description” and “Suggest tags” |
@@ -83,7 +83,7 @@ Open [http://localhost:3000](http://localhost:3000). Sign in with Google, then v
 ## Deploy to Vercel
 
 1. Push the repo to GitHub and import the project in Vercel.
-2. Add the same environment variables in Vercel (Project → Settings → Environment Variables).
+2. Add environment variables in Vercel (Project → Settings → Environment Variables). Required: `DATABASE_URL` (Neon pooling), `AUTH_SECRET`, `NEXTAUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Optional: `OPENAI_API_KEY`, `OPENAI_MODEL`.
 3. Set `NEXTAUTH_URL` to your production URL (e.g. `https://your-app.vercel.app`).
 4. Use Neon’s **pooling** connection string for `DATABASE_URL` (serverless-friendly).
 5. Deploy. Vercel runs `build`; ensure `postinstall` runs `prisma generate` (already in `package.json`).
