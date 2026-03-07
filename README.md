@@ -13,31 +13,38 @@ A production-quality (free-tier friendly) Next.js web app for library management
 ## Features
 
 - **Auth:** Google SSO; roles: Admin, Librarian, Member
+- **First user = Admin:** The first person who signs in (via Google) automatically becomes Admin
 - **Books:** CRUD (Admin/Librarian); view/search (all); soft delete
 - **Loans:** Check-out/check-in (Admin/Librarian); “My loans” (Member)
 - **Search & filters:** Title, author, ISBN, tags, availability; sort by newest or title
 - **AI (optional):** Improve description, suggest tags, AI Complete form (Groq; requires `GROQ_API_KEY`)
 - **Extras:** Activity log (audit), toasts, confirmation dialogs, analytics cards, seed script
 
-## Local setup
+## Quick start (everything you need to do)
 
-### 1. Install dependencies
+### 1. Clone and install
 
 ```bash
+git clone https://github.com/HASANF-12/library-management-systen.git
+cd library-management-system-vercel
 npm install
 ```
 
 ### 2. Environment variables
 
-Copy `.env.example` to `.env.local` and set:
+Copy `.env.example` to `.env.local` and fill in the values:
+
+```bash
+cp .env.example .env.local
+```
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | Neon Postgres connection string (use **pooling** endpoint for serverless/Vercel) |
-| `NEXTAUTH_URL` | Yes | App URL: `http://localhost:3000` (dev) or `https://your-app.vercel.app` (prod) |
-| `AUTH_SECRET` | Yes | Auth.js v5 secret (e.g. `openssl rand -base64 32`) |
-| `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret |
+| `NEXTAUTH_URL` | Yes | `http://localhost:3000` (dev) or your production URL |
+| `AUTH_SECRET` | Yes | Run `openssl rand -base64 32` to generate |
+| `GOOGLE_CLIENT_ID` | Yes | From [Google Cloud Console](https://console.cloud.google.com/apis/credentials) |
+| `GOOGLE_CLIENT_SECRET` | Yes | From Google Cloud Console |
 | `GROQ_API_KEY` | No | Enables AI “Improve description” and “Suggest tags” |
 | `GROQ_MODEL` | No | Default: `llama-3.1-8b-instant` |
 
@@ -47,27 +54,29 @@ Copy `.env.example` to `.env.local` and set:
 npm run prisma:migrate
 ```
 
-(Or: `npx prisma migrate dev` — creates migration and applies it.)
-
-### 4. Seed (optional)
-
-```bash
-npm run prisma:seed
-```
-
-Creates demo users (admin@library.local, librarian@library.local, member@library.local) and sample books. **Note:** These users have no OAuth accounts; sign in with your own Google account, then promote yourself to Admin in the database if needed:
-
-```sql
-UPDATE users SET role = 'ADMIN' WHERE email = 'your-google@gmail.com';
-```
-
-### 5. Run dev server
+### 4. Run the app
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Sign in with Google, then visit Dashboard, Books, Loans, etc.
+Open [http://localhost:3000](http://localhost:3000) and sign in with Google.
+
+### 5. First user = Admin
+
+**On a fresh database, the first user who signs in (via Google OAuth) automatically becomes Admin.** No seed script needed.
+
+To add more admins later, an existing Admin can promote users from the Admin → Users page.
+
+### 6. Seed (optional)
+
+To add sample books and placeholder users for testing:
+
+```bash
+npm run prisma:seed
+```
+
+Creates demo users (admin@library.local, librarian@library.local, member@library.local) and sample books. These users have no OAuth accounts—they are for reference only. Sign in with your own Google account.
 
 ## Scripts
 
@@ -92,6 +101,8 @@ Open [http://localhost:3000](http://localhost:3000). Sign in with Google, then v
    ```bash
    npx prisma migrate deploy
    ```
+
+7. **First user = Admin:** The first person who signs in on the live app becomes Admin automatically.
 
 ## Project structure
 
