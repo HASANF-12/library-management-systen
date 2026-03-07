@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useTransition, useState, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Sparkles } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { createBook } from "@/app/books/actions";
 import { updateBook } from "@/app/books/actions";
 
@@ -22,13 +24,67 @@ type Initial = {
 export function BookForm({
   bookId,
   initial,
+  showAiComplete = false,
 }: {
   bookId?: string;
   initial?: Initial;
+  showAiComplete?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+  const { toast } = useToast();
   const isEdit = !!bookId && !!initial;
+
+  async function handleAiComplete() {
+    const prompt = aiPrompt.trim();
+    if (!prompt) {
+      toast({ title: "Enter a book title, author, or ISBN", variant: "destructive" });
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const res = await fetch("/api/ai/complete-book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({
+          title: res.status === 429 ? "Rate limit" : "Error",
+          description: data.error,
+          variant: "destructive",
+        });
+        setAiLoading(false);
+        return;
+      }
+      const form = formRef.current;
+      if (form) {
+        const setField = (name: string, value: string | number | undefined) => {
+          const el = form.querySelector(`[name="${name}"]`) as HTMLInputElement | HTMLTextAreaElement | null;
+          if (el) el.value = value != null ? String(value) : "";
+        };
+        setField("title", data.title ?? "");
+        setField("author", data.author ?? "");
+        setField("isbn", data.isbn ?? "");
+        setField("description", data.description ?? "");
+        setField("publishedYear", data.publishedYear ?? "");
+        setField("coverImageUrl", data.coverImageUrl ?? "");
+        setField("tags", data.tags ?? "");
+      }
+      toast({
+        title: "Form filled",
+        description: "Review and edit as needed before saving.",
+        variant: "success",
+      });
+    } catch {
+      toast({ title: "Error", description: "AI request failed", variant: "destructive" });
+    }
+    setAiLoading(false);
+  }
 
   async function handleSubmit(formData: FormData) {
     startTransition(async () => {
@@ -48,7 +104,26 @@ export function BookForm({
   }
 
   return (
-    <form action={handleSubmit} className="max-w-xl space-y-4">
+    <form ref={formRef} action={handleSubmit} className="max-w-xl space-y-4">
+      {showAiComplete && !isEdit && (
+        <div className="space-y-2 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+          <p className="text-sm font-medium text-[#0F172A]">AI Complete</p>
+          <p className="text-xs text-[#475569]">Enter a book title, author, or ISBN to auto-fill all fields.</p>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              placeholder="e.g. To Kill a Mockingbird or 1984 George Orwell"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAiComplete())}
+              className="min-w-[200px] flex-1"
+            />
+            <Button type="button" variant="outline" onClick={handleAiComplete} disabled={aiLoading}>
+              <Sparkles className="h-4 w-4" />
+              {aiLoading ? "Filling…" : "AI Complete"}
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="title">Title *</Label>
         <Input

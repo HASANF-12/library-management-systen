@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+import { generateContent, isGroqConfigured } from "@/lib/groq";
+import { checkAiRateLimit } from "@/lib/rate-limit-ai";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -13,9 +12,16 @@ export async function POST(req: Request) {
   if (role !== "ADMIN" && role !== "LIBRARIAN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (!OPENAI_API_KEY?.length) {
+  const { allowed, retryAfterSec } = checkAiRateLimit(session.user.id);
+  if (!allowed) {
     return NextResponse.json(
-      { error: "AI not configured. Set OPENAI_API_KEY." },
+      { error: `You have 10 AI requests per minute. Please try again in ${retryAfterSec ?? 1} seconds.` },
+      { status: 429 }
+    );
+  }
+  if (!isGroqConfigured()) {
+    return NextResponse.json(
+      { error: "AI not configured. Set GROQ_API_KEY in .env.local" },
       { status: 503 }
     );
   }
@@ -28,43 +34,19 @@ export async function POST(req: Request) {
   };
   const context = [title, author, description].filter(Boolean).join("\n");
   if (!context.trim()) {
-    return NextResponse.json({ error: "title, author or description required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "title, author or description required" },
+      { status: 400 }
+    );
   }
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a librarian. Based on the book title, author, and description, suggest 3-6 short tags or categories (e.g. fiction, science-fiction, history). Output only a comma-separated list of tags, lowercase, no numbers or punctuation inside tags. Example: fiction, sci-fi, adventure",
-          },
-          { role: "user", content: context },
-        ],
-        max_tokens: 150,
-      }),
+    const text = await generateContent({
+      systemInstruction:
+        "You are a librarian. Based on the book title, author, and description, suggest 3-6 short tags or categories (e.g. fiction, science-fiction, history). Output only a comma-separated list of tags, lowercase, no numbers or punctuation inside tags. Example: fiction, sci-fi, adventure",
+      userContent: context,
+      maxOutputTokens: 150,
     });
-    if (!res.ok) {
-      const err = await res.text();
-      return NextResponse.json(
-        { error: "OpenAI request failed", details: err },
-        { status: 502 }
-      );
-    }
-    const data = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const text = data.choices?.[0]?.message?.content?.trim();
-    if (!text) {
-      return NextResponse.json({ error: "Empty response from AI" }, { status: 502 });
-    }
     const tags = text
       .split(",")
       .map((t) => t.trim().toLowerCase())
@@ -72,6 +54,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ tags });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "AI request failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "AI request failed" },
+      { status: 500 }
+    );
   }
 }

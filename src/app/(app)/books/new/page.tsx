@@ -7,7 +7,7 @@ export default async function NewBookPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-zinc-900">Add book</h1>
-      <BookForm />
+      <BookForm showAiComplete />
     </div>
   );
 }

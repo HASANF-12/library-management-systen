@@ -24,7 +24,7 @@ export default async function BookDetailPage({
   if (!book) notFound();
 
   const canManage = canManageBooks(session.user.role);
-  const hasAi = !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.length > 0);
+  const hasAi = !!(process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.length > 0);
 
   return (
     <div className="space-y-6">
@@ -96,7 +96,7 @@ export default async function BookDetailPage({
               )}
               {canManage && !hasAi && (
                 <p className="text-sm text-zinc-500">
-                  Set OPENAI_API_KEY in env to enable AI description and tag suggestions.
+                  Set GROQ_API_KEY in env to enable AI description and tag suggestions.
                 </p>
               )}
             </CardContent>

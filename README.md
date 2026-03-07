@@ -16,7 +16,7 @@ A production-quality (free-tier friendly) Next.js web app for library management
 - **Books:** CRUD (Admin/Librarian); view/search (all); soft delete
 - **Loans:** Check-out/check-in (Admin/Librarian); “My loans” (Member)
 - **Search & filters:** Title, author, ISBN, tags, availability; sort by newest or title
-- **AI (optional):** Improve description, suggest tags (requires `OPENAI_API_KEY`)
+- **AI (optional):** Improve description, suggest tags, AI Complete form (Groq; requires `GROQ_API_KEY`)
 - **Extras:** Activity log (audit), toasts, confirmation dialogs, analytics cards, seed script
 
 ## Local setup
@@ -38,8 +38,8 @@ Copy `.env.example` to `.env.local` and set:
 | `AUTH_SECRET` | Yes | Auth.js v5 secret (e.g. `openssl rand -base64 32`) |
 | `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret |
-| `OPENAI_API_KEY` | No | Enables AI “Improve description” and “Suggest tags” |
-| `OPENAI_MODEL` | No | Default: `gpt-4o-mini` |
+| `GROQ_API_KEY` | No | Enables AI “Improve description” and “Suggest tags” |
+| `GROQ_MODEL` | No | Default: `llama-3.1-8b-instant` |
 
 ### 3. Database
 
@@ -83,7 +83,7 @@ Open [http://localhost:3000](http://localhost:3000). Sign in with Google, then v
 ## Deploy to Vercel
 
 1. Push the repo to GitHub and import the project in Vercel.
-2. Add environment variables in Vercel (Project → Settings → Environment Variables). Required: `DATABASE_URL` (Neon pooling), `AUTH_SECRET`, `NEXTAUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Optional: `OPENAI_API_KEY`, `OPENAI_MODEL`.
+2. Add environment variables in Vercel (Project → Settings → Environment Variables). Required: `DATABASE_URL` (Neon pooling), `AUTH_SECRET`, `NEXTAUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Optional: `GROQ_API_KEY`, `GROQ_MODEL`.
 3. Set `NEXTAUTH_URL` to your production URL (e.g. `https://your-app.vercel.app`).
 4. Use Neon’s **pooling** connection string for `DATABASE_URL` (serverless-friendly).
 5. Deploy. Vercel runs `build`; ensure `postinstall` runs `prisma generate` (already in `package.json`).
